@@ -1,0 +1,271 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Order {{ order.number }} | Warehouse{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <div class="text-uppercase small text-secondary fw-semibold">Warehouse dashboard</div>
+    <h1 class="h2 mb-1">Order {{ order.number }}</h1>
+    <div class="text-secondary">Created {{ order.created_at|date:"M j, Y H:i" }}</div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'box_selection:order-list' %}">All orders</a>
+    <a class="btn btn-outline-danger" href="{% url 'box_selection:order-delete' order.pk %}">Delete history</a>
+    <form method="post" action="{% url 'box_selection:order-recommend' order.pk %}">
+      {% csrf_token %}
+      <button class="btn btn-primary" type="submit">
+        {% if order.box_recommendation %}Refresh box recommendation{% else %}Recommend a box{% endif %}
+      </button>
+    </form>
+    {% if order.status == "draft" %}
+      {% if order.box_recommendation.box %}
+        <form method="post" action="{% url 'box_selection:order-place' order.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-success" type="submit">Place order</button>
+        </form>
+      {% else %}
+        <button class="btn btn-success" type="button" disabled title="A suitable catalog box is required">
+          Place order
+        </button>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% if order.status == "draft" and order.box_recommendation and not order.box_recommendation.box %}
+  <div class="alert alert-warning" role="status">
+    This order has a custom size suggestion but no suitable configured box. Add a suitable shipping box and refresh the recommendation before placing the order.
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-secondary text-uppercase fw-semibold">Order status</div>
+        <div class="fs-5 fw-semibold mt-1">{{ order.get_status_display }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-secondary text-uppercase fw-semibold">Products / lines</div>
+        <div class="fs-5 fw-semibold mt-1">{{ order.items.all|length }} line{{ order.items.all|length|pluralize }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="small text-secondary text-uppercase fw-semibold">Total item weight</div>
+        <div class="fs-5 fw-semibold mt-1">{{ order.total_item_weight }} kg</div>
+      </div>
+    </div>
+  </div>
+  {% if order.box_recommendation %}
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="small text-secondary text-uppercase fw-semibold">Estimated shipment gross weight</div>
+          {% if order.box_recommendation.estimated_gross_weight_kg %}
+            <div class="fs-5 fw-semibold mt-1">{{ order.box_recommendation.estimated_gross_weight_kg }} kg</div>
+            <div class="small text-secondary">Includes saved box tare weight.</div>
+          {% else %}
+            <div class="fs-5 fw-semibold mt-1">Unknown</div>
+            <div class="small text-secondary">Empty-box weight is unavailable.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white py-3">
+    <h2 class="h5 mb-0">Order contents</h2>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Product</th>
+          <th scope="col">SKU</th>
+          <th scope="col">Dimensions (cm)</th>
+          <th scope="col">Unit weight</th>
+          <th scope="col">Quantity</th>
+          <th scope="col">Line weight</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in order.items.all %}
+          <tr>
+            <td class="fw-semibold">{{ item.product_name }}</td>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.length_cm }} × {{ item.width_cm }} × {{ item.height_cm }}</td>
+            <td>{{ item.weight_kg }} kg</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.line_weight }} kg</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-secondary py-4">This order has no products to pack.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light">
+        <tr>
+          <th colspan="5" class="text-end">Total item weight</th>
+          <th>{{ order.total_item_weight }} kg</th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+{% if order.box_recommendation %}
+  {% with recommendation=order.box_recommendation %}
+    {% if recommendation.box or recommendation.selected_box %}
+      <div class="card border-success shadow-sm mb-4">
+        <div class="card-header bg-success-subtle py-3 d-flex flex-wrap justify-content-between gap-2">
+          <h2 class="h5 mb-0">Recommended shipping box</h2>
+          <span class="badge text-bg-success align-self-center">Suitable · {{ recommendation.score }}% space utilization</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-4 align-items-center">
+            <div class="col-12 col-lg-7">
+              <div class="text-secondary small text-uppercase fw-semibold">Selected box</div>
+              <div class="display-6 fs-3 fw-bold">
+                {% if recommendation.selected_box.name %}
+                  {{ recommendation.selected_box.name }}
+                {% else %}
+                  {{ recommendation.box.name }}
+                {% endif %}
+              </div>
+              <div class="text-secondary mt-2">
+                Internal dimensions:
+                <strong>
+                  {% if recommendation.selected_box.length_cm %}
+                    {{ recommendation.selected_box.length_cm }} × {{ recommendation.selected_box.width_cm }} × {{ recommendation.selected_box.height_cm }}
+                  {% else %}
+                    {{ recommendation.box.inner_length_cm }} × {{ recommendation.box.inner_width_cm }} × {{ recommendation.box.inner_height_cm }}
+                  {% endif %}
+                  cm
+                </strong>
+              </div>
+              {% if not recommendation.box %}
+                <span class="badge text-bg-info mt-2">Custom size suggestion</span>
+              {% endif %}
+            </div>
+            <div class="col-12 col-lg-5">
+              <div class="rounded bg-light p-3 mb-2">
+                <div class="small text-secondary">Actual order payload weight</div>
+                <strong>{{ order.total_item_weight }} kg</strong>
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="rounded bg-light p-3 h-100">
+                    <div class="small text-secondary">Weight capacity</div>
+                    <strong>
+                      {% if recommendation.selected_box.max_weight_kg %}
+                        {{ recommendation.selected_box.max_weight_kg }}
+                      {% else %}
+                        {{ recommendation.box.max_weight_kg }}
+                      {% endif %}
+                      kg
+                    </strong>
+                    <div class="small text-secondary mt-1">
+                      Tare:
+                      {% if recommendation.box %}
+                        {{ recommendation.selected_box.tare_weight_kg|default_if_none:recommendation.box.tare_weight_kg }}
+                      {% elif recommendation.selected_box.tare_weight_kg %}
+                        {{ recommendation.selected_box.tare_weight_kg }}
+                      {% else %}
+                        Unknown
+                      {% endif %}
+                      kg
+                    </div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="rounded bg-light p-3 h-100">
+                    <div class="small text-secondary">Box cost</div>
+                    {% if recommendation.box %}
+                      <strong>₹{{ recommendation.selected_box.cost|default:recommendation.box.cost }}</strong>
+                    {% else %}
+                      <strong>Not priced</strong>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr>
+          <h3 class="h6">Selection explanation</h3>
+          <p class="mb-1">{{ recommendation.explanation }}</p>
+          <div class="small text-secondary">Algorithm {{ recommendation.algorithm_version }}</div>
+        </div>
+      </div>
+
+      {% if recommendation.alternatives %}
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white py-3">
+            <h2 class="h5 mb-0">Other suitable boxes</h2>
+            <div class="small text-secondary mt-1">Feasible alternatives, ordered by packaging cost.</div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Box</th>
+                  <th scope="col">Internal dimensions (cm)</th>
+                  <th scope="col">Weight capacity</th>
+                  <th scope="col">Cost (₹)</th>
+                  <th scope="col">Space utilization</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for alternative in recommendation.alternatives %}
+                  <tr>
+                    <td class="fw-semibold">{{ alternative.name }}</td>
+                    <td>{{ alternative.length_cm }} × {{ alternative.width_cm }} × {{ alternative.height_cm }}</td>
+                    <td>{{ alternative.max_weight_kg }} kg</td>
+                    <td>₹{{ alternative.cost }}</td>
+                    <td>{{ alternative.score }}%</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% else %}
+        <div class="alert alert-info" role="status">No other suitable boxes were found.</div>
+      {% endif %}
+      {% if not recommendation.box %}
+        <div class="alert alert-warning" role="status">
+          No catalog box is suitable for this order. The dimensions above are a custom size suggestion, not a confirmed or priced shipping box.
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="card border-danger shadow-sm mb-4">
+        <div class="card-header bg-danger-subtle py-3">
+          <h2 class="h5 text-danger-emphasis mb-0">No suitable box found</h2>
+        </div>
+        <div class="card-body">
+          <p class="mb-2">{{ recommendation.explanation }}</p>
+          <p class="text-secondary mb-0">
+            This selector uses a packing heuristic. A failed placement does not prove that no physical arrangement exists; review this order manually or consider additional box sizes.
+          </p>
+        </div>
+      </div>
+    {% endif %}
+  {% endwith %}
+{% else %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div>
+        <h2 class="h5 mb-1">Box recommendation not run</h2>
+        <p class="text-secondary mb-0">Run the selector to find the lowest-cost box that passes the packing checks.</p>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

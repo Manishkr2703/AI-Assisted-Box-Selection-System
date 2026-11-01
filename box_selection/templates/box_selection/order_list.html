@@ -1,0 +1,162 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Orders Workspace | Packwise{% endblock %}
+
+{% block content %}
+<section class="orders-workspace" id="overview">
+  <div class="workspace-title-row tw-flex tw-items-end tw-justify-between">
+    <div>
+      <div class="eyebrow"><span class="eyebrow-line"></span>FULFILLMENT / ORDERS</div>
+      <h1>Orders Workspace</h1>
+      <p class="workspace-subtitle">Review incoming payloads and intelligent packaging assignments.</p>
+    </div>
+    <a class="create-order-button" href="{% url 'box_selection:order-add' %}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Create New Order</span>
+    </a>
+  </div>
+
+  <div class="metric-grid tw-grid tw-gap-4" aria-label="Order workspace metrics">
+    <article class="metric-card">
+      <div class="metric-icon metric-icon-amber">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l2.5 1.5"/><circle cx="12" cy="12" r="8.5"/></svg>
+      </div>
+      <div class="metric-label">Total Pending Orders</div>
+      <div class="metric-value">{{ metrics.pending_orders }}</div>
+      <div class="metric-foot"><span class="metric-dot amber"></span>Draft orders awaiting review</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-icon metric-icon-blue">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12v8.5"/></svg>
+      </div>
+      <div class="metric-label">Avg. Weight processed</div>
+      <div class="metric-value">{% if metrics.average_placed_weight is not None %}{{ metrics.average_placed_weight }} <span>kg</span>{% else %}<span class="metric-empty">—</span>{% endif %}</div>
+      <div class="metric-foot"><span class="metric-dot blue"></span>Average for placed orders{% if metrics.average_placed_weight is None %} · no placed orders yet{% endif %}</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-icon metric-icon-green">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/><path d="M2.5 19.5h19"/></svg>
+      </div>
+      <div class="metric-label">Box Utilization Efficiency</div>
+      <div class="metric-value">{% if metrics.average_box_utilization is not None %}{{ metrics.average_box_utilization }}<span>%</span>{% else %}<span class="metric-empty">—</span>{% endif %}</div>
+      <div class="metric-foot"><span class="metric-dot green"></span>Average catalog-box fill estimate</div>
+    </article>
+    <article class="metric-card metric-card-total">
+      <div class="metric-icon metric-icon-violet">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14v15H5z"/><path d="M8 8h8m-8 4h8m-8 4h5"/></svg>
+      </div>
+      <div class="metric-label">Orders in Workspace</div>
+      <div class="metric-value">{{ orders|length }}</div>
+      <div class="metric-foot"><span class="metric-dot violet"></span>All statuses included</div>
+    </article>
+  </div>
+
+  <section class="orders-panel" id="orders-table" aria-labelledby="orders-heading">
+    <div class="orders-panel-header">
+      <div>
+        <h2 id="orders-heading">Recent orders</h2>
+        <p>Track order status, payload weight, and suggested packaging.</p>
+      </div>
+      <span class="orders-count">{{ orders|length }} order{{ orders|length|pluralize }}</span>
+    </div>
+    <div class="orders-table-scroll">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th class="column-order" scope="col">Order ID</th>
+            <th class="column-status" scope="col">Status</th>
+            <th class="column-date" scope="col">Date created</th>
+            <th class="column-items" scope="col">Items</th>
+            <th class="column-weight" scope="col">Total weight</th>
+            <th class="column-packaging" scope="col">Suggested packaging</th>
+            <th class="column-actions" scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr class="order-row">
+              <td>
+                <div class="order-id-cell">
+                  <a class="order-id-link" href="{% url 'box_selection:order-detail' order.pk %}">#{{ order.number|stringformat:"s"|slice:":8" }}</a>
+                  <button class="copy-order-id" type="button" data-copy="{{ order.number }}" aria-label="Copy full order ID {{ order.number }}" title="Copy full order ID">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>
+                  </button>
+                </div>
+              </td>
+              <td>
+                {% if order.status == "draft" %}
+                  <span class="status-pill status-draft"><span></span>Draft</span>
+                {% elif order.status == "placed" %}
+                  <span class="status-pill status-placed"><span></span>Placed</span>
+                {% else %}
+                  <span class="status-pill status-cancelled"><span></span>{{ order.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="date-cell"><span>{{ order.created_at|date:"M j, Y" }}</span><small>{{ order.created_at|date:"H:i" }}</small></td>
+              <td><span class="items-count">{{ order.total_item_count }}</span><span class="items-caption">item{{ order.total_item_count|pluralize }}</span></td>
+              <td class="weight-cell">{{ order.total_item_weight }} <span>kg</span></td>
+              <td>
+                {% if order.box_recommendation %}
+                  {% if order.box_recommendation.box %}
+                    {% with package_name=order.box_recommendation.selected_box.name|default:order.box_recommendation.box.name %}
+                      {% if "Small" in package_name %}
+                        <span class="packaging-pill package-small"><span class="package-icon">S</span>{{ package_name }}</span>
+                      {% elif "Medium" in package_name %}
+                        <span class="packaging-pill package-medium"><span class="package-icon">M</span>{{ package_name }}</span>
+                      {% elif "Large" in package_name %}
+                        <span class="packaging-pill package-large"><span class="package-icon">L</span>{{ package_name }}</span>
+                      {% else %}
+                        <span class="packaging-pill package-other"><span class="package-icon">B</span>{{ package_name }}</span>
+                      {% endif %}
+                    {% endwith %}
+                  {% elif order.box_recommendation.selected_box %}
+                    <span class="packaging-pill package-custom"><span class="package-icon">C</span>Custom size suggestion</span>
+                  {% else %}
+                    <span class="table-muted">No suitable box</span>
+                  {% endif %}
+                {% else %}
+                  <span class="table-muted">Not evaluated</span>
+                {% endif %}
+              </td>
+              <td>
+                <details class="row-actions">
+                  <summary aria-label="Actions for order {{ order.number }}" title="Order actions">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                  </summary>
+                  <div class="row-action-menu">
+                    <a href="{% url 'box_selection:order-detail' order.pk %}">View order</a>
+                    {% if order.status == "draft" %}
+                      {% if order.box_recommendation.box %}
+                        <form method="post" action="{% url 'box_selection:order-place' order.pk %}">
+                          {% csrf_token %}
+                          <button class="place-action" type="submit">Place order</button>
+                        </form>
+                      {% else %}
+                        <span class="place-action-disabled" title="A suitable catalog box is required">Place order unavailable</span>
+                      {% endif %}
+                    {% endif %}
+                    <a class="delete-action" href="{% url 'box_selection:order-delete' order.pk %}">Delete history</a>
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7">
+                <div class="orders-empty">
+                  <span class="empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.75 7.5 8.25-4.25 8.25 4.25v9l-8.25 4.25L3.75 16.5v-9Z"/><path d="M12 12v8"/></svg></span>
+                  <strong>No orders yet</strong>
+                  <span>Create an order to see packaging recommendations here.</span>
+                  <a href="{% url 'box_selection:order-add' %}">Create your first order</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="orders-panel-footer"><span>Packaging suggestions are based on a 3D packing heuristic.</span><span>Currency: INR (₹)</span></div>
+  </section>
+  <div class="copy-feedback" id="copyFeedback" role="status" aria-live="polite"></div>
+</section>
+{% endblock %}

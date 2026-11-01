@@ -1,0 +1,21 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Delete {{ object }} | Box Selection{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-7">
+    <div class="card border-danger shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h3">Delete {{ object }}?</h1>
+        <p class="mb-4">This action cannot be undone. Records referenced by an order or recommendation cannot be deleted.</p>
+        <form method="post">
+          {% csrf_token %}
+          <button class="btn btn-danger" type="submit">Delete</button>
+          <a class="btn btn-outline-secondary" href="{{ view.success_url }}">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

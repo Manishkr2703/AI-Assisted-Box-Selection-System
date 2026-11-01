@@ -1,0 +1,112 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Create order | Box Selection{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-9">
+    <h1 class="h2 mb-1">Create order</h1>
+    <p class="text-secondary mb-3">Add one or more products and choose a quantity for each.</p>
+    {% if not has_products %}
+      <div class="alert alert-warning" role="alert">
+        Add at least one product before creating an order.
+        <a href="{% url 'box_selection:product-add' %}">Add a product</a>
+      </div>
+    {% endif %}
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="post" novalidate id="order-form">
+          {% csrf_token %}
+          {{ formset.management_form }}
+          {% if formset.non_form_errors %}
+            <div class="alert alert-danger" role="alert">
+              {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          <div id="order-items">
+            {% for item_form in formset %}
+              <div class="order-item-row border rounded p-3 mb-3">
+                <div class="row g-3 align-items-start">
+                  {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                  {% for field in item_form.visible_fields %}
+                    <div class="{% if field.name == 'product' %}col-12 col-md-8{% else %}col-12 col-md-3{% endif %}">
+                      <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                      {{ field }}
+                      {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endfor %}
+                  <div class="col-12 col-md-1 d-grid">
+                    <button class="btn btn-outline-danger remove-item" type="button" aria-label="Remove item row">×</button>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <template id="empty-item-form">
+            <div class="order-item-row border rounded p-3 mb-3">
+              <div class="row g-3 align-items-start">
+                {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                {% for field in formset.empty_form.visible_fields %}
+                  <div class="{% if field.name == 'product' %}col-12 col-md-8{% else %}col-12 col-md-3{% endif %}">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                  </div>
+                {% endfor %}
+                <div class="col-12 col-md-1 d-grid">
+                  <button class="btn btn-outline-danger remove-item" type="button" aria-label="Remove item row">×</button>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-primary" type="button" id="add-item" {% if not has_products %}disabled{% endif %}>Add another product</button>
+            <button class="btn btn-primary" type="submit" {% if not has_products %}disabled{% endif %}>Create order</button>
+            <a class="btn btn-outline-secondary" href="{% url 'box_selection:order-list' %}">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (() => {
+    const container = document.getElementById("order-items");
+    const addButton = document.getElementById("add-item");
+    const totalForms = document.getElementById("id_items-TOTAL_FORMS");
+    const template = document.getElementById("empty-item-form");
+
+    const reindexRows = () => {
+      container.querySelectorAll(".order-item-row").forEach((row, index) => {
+        row.querySelectorAll("[name], [id], label[for]").forEach((element) => {
+          for (const attribute of ["name", "id", "for"]) {
+            const value = element.getAttribute(attribute);
+            if (value) {
+              element.setAttribute(
+                attribute,
+                value.replace(/items-\d+-/g, `items-${index}-`),
+              );
+            }
+          }
+        });
+      });
+      totalForms.value = container.querySelectorAll(".order-item-row").length;
+    };
+
+    addButton.addEventListener("click", () => {
+      const index = Number(totalForms.value);
+      const html = template.innerHTML.replaceAll("__prefix__", index);
+      container.insertAdjacentHTML("beforeend", html);
+      totalForms.value = index + 1;
+    });
+
+    container.addEventListener("click", (event) => {
+      if (event.target.closest(".remove-item")) {
+        event.target.closest(".order-item-row").remove();
+        reindexRows();
+      }
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Products | Box Selection{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h2 mb-1">Products</h1>
+    <p class="text-secondary mb-0">Manage product dimensions and weight.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'box_selection:product-add' %}">Add product</a>
+</div>
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">SKU</th>
+          <th scope="col">Category</th>
+          <th scope="col">Price (₹)</th>
+          <th scope="col">Dimensions (cm)</th>
+          <th scope="col">Weight (kg)</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td><a href="{% url 'box_selection:product-detail' product.pk %}">{{ product.name }}</a></td>
+            <td>{{ product.sku }}</td>
+            <td>{{ product.category }}</td>
+            <td>₹{{ product.price }}</td>
+            <td>{{ product.length_cm }} × {{ product.width_cm }} × {{ product.height_cm }}</td>
+            <td>{{ product.weight_kg }}</td>
+            <td class="text-nowrap">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'box_selection:product-edit' product.pk %}">Edit</a>
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'box_selection:product-delete' product.pk %}">Delete</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center text-secondary py-4">No products yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Warehouse Analytics | Packwise{% endblock %}
+
+{% block content %}
+<section class="orders-workspace" id="overview">
+  <div class="workspace-title-row">
+    <div>
+      <div class="eyebrow"><span class="eyebrow-line"></span>FULFILLMENT / INSIGHTS</div>
+      <h1>Warehouse Analytics</h1>
+      <p class="workspace-subtitle">A live snapshot of order activity, catalog coverage, and packaging efficiency.</p>
+    </div>
+  </div>
+
+  <div class="metric-grid" aria-label="Warehouse analytics">
+    <article class="metric-card">
+      <div class="metric-label">Total Orders</div>
+      <div class="metric-value">{{ analytics.total }}</div>
+      <div class="metric-foot">All order statuses</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-label">Draft Orders</div>
+      <div class="metric-value">{{ analytics.pending }}</div>
+      <div class="metric-foot">Awaiting placement</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-label">Placed Orders</div>
+      <div class="metric-value">{{ analytics.placed }}</div>
+      <div class="metric-foot">Successfully placed</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-label">Average Placed Order Weight</div>
+      <div class="metric-value">
+        {% if analytics.average_placed_weight is not None %}
+          {{ analytics.average_placed_weight }} <span>kg</span>
+        {% else %}
+          <span class="metric-empty">—</span>
+        {% endif %}
+      </div>
+      <div class="metric-foot">Product weight, excluding packaging</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-label">Average Box Utilization</div>
+      <div class="metric-value">
+        {% if analytics.average_box_utilization is not None %}
+          {{ analytics.average_box_utilization }}<span>%</span>
+        {% else %}
+          <span class="metric-empty">—</span>
+        {% endif %}
+      </div>
+      <div class="metric-foot">Saved catalog-box recommendations</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-label">Product Catalog</div>
+      <div class="metric-value">{{ analytics.product_count }}</div>
+      <div class="metric-foot">Available products</div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-label">Shipping Boxes</div>
+      <div class="metric-value">{{ analytics.box_count }}</div>
+      <div class="metric-foot">Configured box options</div>
+    </article>
+  </div>
+
+  <section class="orders-panel" aria-label="Analytics methodology">
+    <div class="orders-panel-header">
+      <div>
+        <h2>How to read these metrics</h2>
+        <p>Values are calculated from the current local workspace database.</p>
+      </div>
+    </div>
+    <div class="analytics-note">
+      Average order weight uses placed orders and product weights multiplied by their quantities. Box utilization is the average saved score for recommendations using a configured catalog box; custom-size recommendations are excluded.
+    </div>
+  </section>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}{{ product.name }} | Box Selection{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h2 mb-0">{{ product.name }}</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'box_selection:product-list' %}">Back</a>
+    <a class="btn btn-primary" href="{% url 'box_selection:product-edit' product.pk %}">Edit product</a>
+  </div>
+</div>
+<div class="card shadow-sm">
+  <dl class="row card-body mb-0">
+    <dt class="col-sm-4">SKU</dt><dd class="col-sm-8">{{ product.sku }}</dd>
+    <dt class="col-sm-4">Description</dt><dd class="col-sm-8">{{ product.description|default:"No description provided." }}</dd>
+    <dt class="col-sm-4">Category</dt><dd class="col-sm-8">{{ product.category }}</dd>
+    <dt class="col-sm-4">Price</dt><dd class="col-sm-8">₹{{ product.price }}</dd>
+    <dt class="col-sm-4">Length</dt><dd class="col-sm-8">{{ product.length_cm }} cm</dd>
+    <dt class="col-sm-4">Width</dt><dd class="col-sm-8">{{ product.width_cm }} cm</dd>
+    <dt class="col-sm-4">Height</dt><dd class="col-sm-8">{{ product.height_cm }} cm</dd>
+    <dt class="col-sm-4">Weight</dt><dd class="col-sm-8">{{ product.weight_kg }} kg</dd>
+  </dl>
+</div>
+{% endblock %}

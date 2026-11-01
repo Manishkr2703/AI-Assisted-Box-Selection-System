@@ -1,0 +1,23 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}{{ box.name }} | Box Selection{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h2 mb-0">{{ box.name }}</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'box_selection:box-list' %}">Back</a>
+    <a class="btn btn-primary" href="{% url 'box_selection:box-edit' box.pk %}">Edit box</a>
+  </div>
+</div>
+<div class="card shadow-sm">
+  <dl class="row card-body mb-0">
+    <dt class="col-sm-4">Internal length</dt><dd class="col-sm-8">{{ box.inner_length_cm }} cm</dd>
+    <dt class="col-sm-4">Internal width</dt><dd class="col-sm-8">{{ box.inner_width_cm }} cm</dd>
+    <dt class="col-sm-4">Internal height</dt><dd class="col-sm-8">{{ box.inner_height_cm }} cm</dd>
+    <dt class="col-sm-4">Maximum weight capacity</dt><dd class="col-sm-8">{{ box.max_weight_kg }} kg</dd>
+    <dt class="col-sm-4">Empty box weight</dt><dd class="col-sm-8">{{ box.tare_weight_kg|default_if_none:"Unknown" }}{% if box.tare_weight_kg is not None %} kg{% endif %}</dd>
+    <dt class="col-sm-4">Cost</dt><dd class="col-sm-8">₹{{ box.cost }}</dd>
+  </dl>
+</div>
+{% endblock %}

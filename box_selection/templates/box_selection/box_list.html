@@ -1,0 +1,46 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Shipping boxes | Box Selection{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h2 mb-1">Shipping boxes</h1>
+    <p class="text-secondary mb-0">Manage internal dimensions, capacity and cost.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'box_selection:box-add' %}">Add shipping box</a>
+</div>
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Internal dimensions (cm)</th>
+          <th scope="col">Max weight (kg)</th>
+          <th scope="col">Tare weight (kg)</th>
+          <th scope="col">Cost (₹)</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for box in boxes %}
+          <tr>
+            <td><a href="{% url 'box_selection:box-detail' box.pk %}">{{ box.name }}</a></td>
+            <td>{{ box.inner_length_cm }} × {{ box.inner_width_cm }} × {{ box.inner_height_cm }}</td>
+            <td>{{ box.max_weight_kg }}</td>
+            <td>{{ box.tare_weight_kg|default_if_none:"Unknown" }}</td>
+            <td>₹{{ box.cost }}</td>
+            <td class="text-nowrap">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'box_selection:box-edit' box.pk %}">Edit</a>
+              <a class="btn btn-sm btn-outline-danger" href="{% url 'box_selection:box-delete' box.pk %}">Delete</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-center text-secondary py-4">No shipping boxes yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

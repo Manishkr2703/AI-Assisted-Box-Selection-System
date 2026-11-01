@@ -1,0 +1,22 @@
+{% extends "box_selection/base.html" %}
+
+{% block title %}Delete order history | Box Selection{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-7">
+    <div class="card border-danger shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h3">Delete this order history?</h1>
+        <p>Order <strong>{{ object.number }}</strong> will be permanently deleted, including its order items and saved box recommendation.</p>
+        <p class="mb-4">The product catalog and shipping boxes will not be deleted.</p>
+        <form method="post">
+          {% csrf_token %}
+          <button class="btn btn-danger" type="submit">Delete order history</button>
+          <a class="btn btn-outline-secondary" href="{% url 'box_selection:order-detail' object.pk %}">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
